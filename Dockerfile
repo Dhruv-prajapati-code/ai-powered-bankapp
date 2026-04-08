@@ -1,22 +1,29 @@
-# Build stage
-FROM eclipse-temurin:21-jdk-alpine AS build
+# image for java 21 mvn Stage 1
+FROM maven:3.9-eclipse-temurin-21-jammy AS build
+
 WORKDIR /app
+
 COPY . .
-RUN chmod +x mvnw && ./mvnw clean package -DskipTests -B
 
-# Run stage - alpine has significantly fewer CVEs than ubuntu/jammy
-FROM eclipse-temurin:21-jre-alpine
+# giving executable permission to the file && instaling package
+RUN chmod +x mvnw && ./mvnw clean package -DskipTests
+
+
+# Stage 2
+FROM eclipse-temurin:21-jre-alpine AS runner
+
 WORKDIR /app
 
-# Pull latest security patches for OS libraries
+# Updating packages 
 RUN apk update && apk upgrade --no-cache
 
-# Create a non-root user for security (Alpine uses addgroup/adduser instead of groupadd/useradd)
-RUN addgroup -S devsecops && adduser -S -G devsecops devsecops
-USER devsecops
+#Adding group && adding user to that group
+RUN addgroup -S devops && adduser -S -G devops devops
 
-# Copy only the built artifact
+# Running as that user
+USER devops
+
+#Copying only build pack
 COPY --from=build /app/target/*.jar app.jar
 
-EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]

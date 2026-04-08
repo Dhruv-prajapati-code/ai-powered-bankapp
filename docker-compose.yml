@@ -1,52 +1,60 @@
 services:
   mysql:
-    image: mysql:8.0
-    container_name: bankapp-mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: Test@123
-      MYSQL_DATABASE: bankappdb
+    image: mysql
+    container_name: mysql
     ports:
       - "3306:3306"
-    volumes:
-      - mysql-data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: Test@123
+      MYSQL_DATABASE: bankapp
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin","ping","-h","localhost","-u","root","-pTest@123"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 3
       start_period: 30s
+    volumes:
+      - bankapp-vol:/var/lib/mysql
     networks:
-      - bankapp-net
-
+      - bankapp-nw
+  
   ollama:
     image: ollama/ollama
-    container_name: bankapp-ollama
+    container_name: ollama
     ports:
       - "11434:11434"
+    networks:
+      - bankapp-nw
     volumes:
-      - ollama-data:/root/.ollama
+      - ollama:/root/.ollama
+    command: "serve"
     healthcheck:
-      test: ["CMD", "ollama", "list"]
+      test: ["CMD","ollama","list"]
       interval: 10s
       timeout: 5s
-      retries: 5
-    networks:
-      - bankapp-net
+      retries: 3
+      start_period: 30s
 
-  ollama-pull-model:
+  ollama-model:
     image: ollama/ollama
-    container_name: ollama-pull-model
+    container_name: ollama-model
     environment:
-      - OLLAMA_HOST=ollama
-    volumes:
-      - ollama-data:/root/.ollama
-    depends_on:
-      ollama:
-        condition: service_healthy
+      OLLAMA_HOST: ollama
+      OLLAMA_URL: http://ollama:11434
     entrypoint: /bin/sh
     command: -c "ollama pull tinyllama"
     networks:
-      - bankapp-net
+      - bankapp-nw
+    volumes:
+      - ollama:/root/.ollama
+    depends_on:
+      ollama:
+        condition: service_healthy
+
+
+    
+
+
 
   bankapp:
     build: .
@@ -55,23 +63,24 @@ services:
       - "8080:8080"
     environment:
       MYSQL_HOST: mysql
-      MYSQL_PORT: 3306
-      MYSQL_DATABASE: bankappdb
       MYSQL_USER: root
       MYSQL_PASSWORD: Test@123
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: bankappdb
       OLLAMA_URL: http://ollama:11434
     depends_on:
       mysql:
         condition: service_healthy
-      ollama-pull-model:
+      ollama-model:
         condition: service_completed_successfully
     networks:
-      - bankapp-net
+      - bankapp-nw
 
 volumes:
-  mysql-data:
-  ollama-data:
+  ollama:
+  bankapp-vol:
+    external: true
 
 networks:
-  bankapp-net:
-    driver: bridge
+  bankapp-nw:
+    external: true
