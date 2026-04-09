@@ -47,7 +47,24 @@ spec:
                       ollama pull tinyllama
                     else
                       echo "already installed in pv" >> /tmp/poststart.log
-                    fi               
+                    fi
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  ollama list | grep -q tinyllama
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            failureThreshold: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 11434
+            initialDelaySeconds: 15
+            periodSeconds: 3
+            failureThreshold: 10        
       volumes:
         - name: ollama-mount
           persistentVolumeClaim:
