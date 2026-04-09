@@ -106,8 +106,13 @@ It directly maps a port on your local machine to the port of the Gateway service
 ## Key Kubernetes Concepts Used
 
 *   **Gateway API:** A standardized, modern approach for routing traffic into the cluster. We utilize `GatewayClass` to define the controller type, `Gateway` to act as the traffic listener, and `HTTPRoute` to evaluate traffic rules and forward requests based on paths or headers.
+
 *   **backendRefs and Services:** Within `HTTPRoute`, traffic is explicitly directed to specific Kubernetes `Service` definitions via `backendRefs`, cleanly uncoupling routing logic from application deployment logic.
+
+
 *   **Deployment vs Stateful Apps:** Our stateless Backend service uses a `Deployment` object, allowing dynamic scaling and easy replication. Conversely, MySQL relies on durable storage and ordered handling, necessitating safe, stateful volume configurations to preserve data integrity across restarts.
+
+
 *   **LoadBalancer in Minikube:** Since Minikube operates locally, standard cloud LoadBalancers cannot natively resolve to accessible external IP addresses. Minikube circumvents this by either exposing NodePorts or leveraging the `tunnel` function to simulate an external LoadBalancer IP.
 
 ## Troubleshooting
@@ -115,8 +120,11 @@ It directly maps a port on your local machine to the port of the Gateway service
 ### Common Issues
 
 *   **CrashLoopBackOff:** A pod is repeatedly crashing upon startup. Check the application logs for missing environment variables, database misconfigurations, or syntax errors.
+
 *   **EXTERNAL-IP pending:** The Gateway or LoadBalancer service is waiting for an IP. Ensure you are running `minikube tunnel` in a separate terminal window and keeping it active.
+
 *   **Gateway PROGRAMMED false:** The NGINX Gateway underlying controller might be missing or misconfigured. Verify that standard Gateway API Custom Resource Definitions (CRDs) are installed.
+
 *   **Connection Reset Errors:** Often occurs immediately after deployment when pods are still warming up, or if the target port in your Service/HTTPRoute mismatches the container port.
 
 ### Useful Commands
@@ -148,5 +156,7 @@ Bankapp-chatbot-LLM/
 ## Future Improvements
 
 *   **HTTPS (TLS):** Integrate cert-manager and attach TLS certificates to the Gateway for secure, encrypted external traffic routing.
+
 *   **Canary Deployments:** Leverage Gateway API HTTPRoutes to split traffic (e.g., 90/10) to safely roll out new backend features and LLM model upgrades.
+
 *   **Scaling with StatefulSets:** Migrate entirely to robust `StatefulSet` resources with Persistent Volume Claims for production-hardened MySQL durability, allowing safe replication and backups.
